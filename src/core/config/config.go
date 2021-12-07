@@ -287,7 +287,14 @@ func Database() (*models.Database, error) {
 		MaxOpenConns: cfgMgr.Get(common.PostGreSQLMaxOpenConns).GetInt(),
 	}
 	database.PostGreSQL = postgresql
-
+	mysql := &models.MySQL{
+		Host:         cfgMgr.Get(common.MySQLHost).GetString(),
+		Port:         cfgMgr.Get(common.MySQLPort).GetInt(),
+		Username:     cfgMgr.Get(common.MySQLUsername).GetString(),
+		Password:     cfgMgr.Get(common.MySQLPassword).GetString(),
+		Database:     cfgMgr.Get(common.MySQLDatabase).GetString(),
+	}
+	database.MySQL = mysql
 	return database, nil
 }
 

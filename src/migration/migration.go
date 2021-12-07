@@ -17,13 +17,15 @@ package migration
 import (
 	"context"
 	"fmt"
+	"time"
+
 	beegorm "github.com/astaxie/beego/orm"
+	"github.com/goharbor/harbor/src/common"
 	"github.com/goharbor/harbor/src/common/dao"
 	"github.com/goharbor/harbor/src/common/models"
 	"github.com/goharbor/harbor/src/lib/log"
 	"github.com/goharbor/harbor/src/lib/orm"
 	"github.com/golang-migrate/migrate/v4"
-	"time"
 )
 
 const (
@@ -35,7 +37,14 @@ const (
 // MigrateDB upgrades DB schema and do necessary transformation of the data in DB
 func MigrateDB(database *models.Database) error {
 	// check the database schema version
-	migrator, err := dao.NewMigrator(database.PostGreSQL)
+	var migrator *migrate.Migrate
+	var err error
+	switch database.Type {
+	case "", common.DatabaseType_PostGreSQL:
+		migrator, err = dao.NewPostGreSQLMigrator(database.PostGreSQL)
+	case common.DatabaseType_MySQL:
+		migrator, err = dao.NewMySQLMigrator(database.MySQL)
+	}
 	if err != nil {
 		return err
 	}

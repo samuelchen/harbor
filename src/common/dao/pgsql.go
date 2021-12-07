@@ -107,7 +107,7 @@ func (p *pgsql) UpgradeSchema() error {
 	if err != nil {
 		return err
 	}
-	m, err := NewMigrator(&models.PostGreSQL{
+	m, err := NewPostGreSQLMigrator(&models.PostGreSQL{
 		Host:     p.host,
 		Port:     int(port),
 		Username: p.usr,
@@ -136,7 +136,7 @@ func (p *pgsql) UpgradeSchema() error {
 }
 
 // NewMigrator creates a migrator base on the information
-func NewMigrator(database *models.PostGreSQL) (*migrate.Migrate, error) {
+func NewPostGreSQLMigrator(database *models.PostGreSQL) (*migrate.Migrate, error) {
 	dbURL := url.URL{
 		Scheme:   "postgres",
 		User:     url.UserPassword(database.Username, database.Password),

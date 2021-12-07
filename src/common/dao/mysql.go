@@ -16,11 +16,18 @@ package dao
 
 import (
 	"fmt"
+	"net/url"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/astaxie/beego/orm"
+	"github.com/goharbor/harbor/src/lib/log"
 	_ "github.com/go-sql-driver/mysql" // register mysql driver
+	"github.com/goharbor/harbor/src/common/models"
 	"github.com/goharbor/harbor/src/common/utils"
+	migrate "github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/mysql" // import mysql driver for migrator
 )
 
 type mysql struct {
@@ -73,7 +80,40 @@ func (m *mysql) Name() string {
 }
 
 // UpgradeSchema is not supported for MySQL, it assumes the schema is initialized and up to date in the DB instance.
-func (m *mysql) UpgradeSchema() error {
+// func (m *mysql) UpgradeSchema() error {
+// 	return nil
+// }
+
+// UpgradeSchema calls migrate tool to upgrade schema to the latest based on the SQL scripts.
+func (p *mysql) UpgradeSchema() error {
+	port, err := strconv.ParseInt(p.port, 10, 64)
+	if err != nil {
+		return err
+	}
+	m, err := NewMySQLMigrator(&models.MySQL{
+		Host:     p.host,
+		Port:     int(port),
+		Username: p.usr,
+		Password: p.pwd,
+		Database: p.database,
+	})
+	if err != nil {
+		return err
+	}
+	defer func() {
+		srcErr, dbErr := m.Close()
+		if srcErr != nil || dbErr != nil {
+			log.Warningf("Failed to close migrator, source error: %v, db error: %v", srcErr, dbErr)
+		}
+	}()
+	log.Infof("Upgrading schema for mysql ...")
+	err = m.Up()
+	if err == migrate.ErrNoChange {
+		log.Infof("No change in schema, skip.")
+	} else if err != nil { // migrate.ErrLockTimeout will be thrown when another process is doing migration and timeout.
+		log.Errorf("Failed to upgrade schema, error: %q", err)
+		return err
+	}
 	return nil
 }
 
@@ -81,4 +121,30 @@ func (m *mysql) UpgradeSchema() error {
 func (m *mysql) String() string {
 	return fmt.Sprintf("type-%s host-%s port-%s user-%s database-%s",
 		m.Name(), m.host, m.port, m.usr, m.database)
+}
+
+// NewMigrator creates a migrator base on the information
+func NewMySQLMigrator(database *models.MySQL) (*migrate.Migrate, error) {
+	dbURL := url.URL{
+		Scheme:   "mysql",
+		User:     url.UserPassword(database.Username, database.Password),
+		Host:     fmt.Sprintf("tcp(%s:%d)", database.Host, database.Port),
+		Path:     database.Database,
+		RawQuery: "charset=utf8mb4&parseTime=True",
+	}
+
+	// For UT
+	path := os.Getenv("MYSQL_MIGRATION_SCRIPTS_PATH")
+	if len(path) == 0 {
+		path = defaultMigrationPath
+	}
+	srcURL := fmt.Sprintf("file://%s", path)
+
+	// drv, err = sql.Open("mysql", dbURL.String())
+	m, err := migrate.New(srcURL, dbURL.String())
+	if err != nil {
+		return nil, err
+	}
+	m.Log = newMigrateLogger()
+	return m, nil
 }

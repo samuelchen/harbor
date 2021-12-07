@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build darwin
-// +build linux
+// +build windows
 
 package filesystem
 
 import (
-	"os"
-	"reflect"
 	"syscall"
+	"unsafe"
 
 	"github.com/goharbor/harbor/src/lib/log"
 	storage "github.com/goharbor/harbor/src/pkg/systeminfo/imagestorage"
@@ -46,37 +44,36 @@ func (d *driver) Name() string {
 	return driverName
 }
 
-// Cap returns the capacity of the filesystem storage
 func (d *driver) Cap() (*storage.Capacity, error) {
-	var stat syscall.Statfs_t
-	if _, err := os.Stat(d.path); os.IsNotExist(err) {
-		// Return zero value if the path does not exist.
+	kernel32, err := syscall.LoadLibrary("Kernel32.dll")
+	if err != nil {
 		log.Warningf("The path %s is not found, will return zero value of capacity", d.path)
 		return &storage.Capacity{Total: 0, Free: 0}, nil
 	}
+	defer syscall.FreeLibrary(kernel32)
+	GetDiskFreeSpaceEx, err := syscall.GetProcAddress(syscall.Handle(kernel32), "GetDiskFreeSpaceExW")
 
-	err := syscall.Statfs(d.path, &stat)
 	if err != nil {
-		return nil, err
+		log.Warningf("GetDiskFreeSpaceExW function not found")
+		return &storage.Capacity{Total: 0, Free: 0}, nil
 	}
 
-	// When container is run in MacOS, `bsize` obtained by `statfs` syscall is not the fundamental block size,
-	// but the `iosize` (optimal transfer block size) instead, it's usually 1024 times larger than the `bsize`.
-	// for example `4096 * 1024`. To get the correct block size, we should use `frsize`. But `frsize` isn't
-	// guaranteed to be supported everywhere, so we need to check whether it's supported before use it.
-	// For more details, please refer to: https://github.com/docker/for-mac/issues/2136
-	bSize := uint64(stat.Bsize)
-	field := reflect.ValueOf(&stat).Elem().FieldByName("Frsize")
-	if field.IsValid() {
-		if field.Kind() == reflect.Uint64 {
-			bSize = field.Uint()
-		} else {
-			bSize = uint64(field.Int())
-		}
-	}
+	lpFreeBytesAvailable := uint64(0)
+	lpTotalNumberOfBytes := uint64(0)
+	lpTotalNumberOfFreeBytes := uint64(0)
+	r, a, b := syscall.Syscall6(uintptr(GetDiskFreeSpaceEx), 4,
+		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(d.path))),
+		uintptr(unsafe.Pointer(&lpFreeBytesAvailable)),
+		uintptr(unsafe.Pointer(&lpTotalNumberOfBytes)),
+		uintptr(unsafe.Pointer(&lpTotalNumberOfFreeBytes)), 0, 0)
+
+	log.Debugf("r, a, b: %d %d %d", r, a, b)
+	// log.Printf("Available  %dmb", lpFreeBytesAvailable/1024/1024.0)
+	// log.Printf("Total      %dmb", lpTotalNumberOfBytes/1024/1024.0)
+	// log.Printf("Free       %dmb", lpTotalNumberOfFreeBytes/1024/1024.0)
 
 	return &storage.Capacity{
-		Total: stat.Blocks * bSize,
-		Free:  stat.Bavail * bSize,
+		Total: lpTotalNumberOfBytes,
+		Free:  lpTotalNumberOfFreeBytes,
 	}, nil
 }

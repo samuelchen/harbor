@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/astaxie/beego/orm"
+	"github.com/goharbor/harbor/src/common"
 	"github.com/goharbor/harbor/src/common/models"
 	"github.com/goharbor/harbor/src/lib/log"
 )
@@ -74,7 +75,7 @@ func InitDatabase(database *models.Database) error {
 func getDatabase(database *models.Database) (db Database, err error) {
 
 	switch database.Type {
-	case "", "postgresql":
+	case "", common.DatabaseType_PostGreSQL:
 		db = NewPGSQL(
 			database.PostGreSQL.Host,
 			strconv.Itoa(database.PostGreSQL.Port),
@@ -84,6 +85,14 @@ func getDatabase(database *models.Database) (db Database, err error) {
 			database.PostGreSQL.SSLMode,
 			database.PostGreSQL.MaxIdleConns,
 			database.PostGreSQL.MaxOpenConns,
+		)
+	case common.DatabaseType_MySQL:
+		db = NewMySQL(
+			database.MySQL.Host,
+			strconv.Itoa(database.MySQL.Port),
+			database.MySQL.Username,
+			database.MySQL.Password,
+			database.MySQL.Database,
 		)
 	default:
 		err = fmt.Errorf("invalid database: %s", database.Type)
