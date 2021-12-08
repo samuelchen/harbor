@@ -23,11 +23,11 @@ var defaultAttrs = map[string]string{
 	"POSTGRESQL_DATABASE": "registry",
 	"POSTGRESQL_SSLMODE":  "disable",
 
-	common.MySQLHost:     "localhost",
-	common.MySQLPort:     "3306",
-	common.MySQLUsername: "root",
-	common.MySQLPassword: "password",
-	common.MySQLDatabase: "registry",
+	"MYSQL_HOST": "localhost",
+	"MYSQL_PORT": "3306",
+	"MYSQL_USERNAME": "root",
+	"MYSQL_PASSWORD": "password",
+	"MYSQL_DATABASE": "registry",
 }
 
 func main() {
