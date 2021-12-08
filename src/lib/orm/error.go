@@ -16,6 +16,7 @@ package orm
 
 import (
 	"github.com/astaxie/beego/orm"
+	"github.com/go-sql-driver/mysql"
 	"github.com/goharbor/harbor/src/lib/errors"
 	"github.com/lib/pq"
 )
@@ -76,8 +77,12 @@ func AsForeignKeyError(err error, messageFormat string, args ...interface{}) *er
 }
 
 func isDuplicateKeyError(err error) bool {
+	// TODO: change it by switching DriverType if suppport too many DB.
 	var pqErr *pq.Error
+	var mysqlErr *mysql.MySQLError
 	if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+		return true
+	} else if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
 		return true
 	}
 
