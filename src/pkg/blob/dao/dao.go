@@ -17,10 +17,12 @@ package dao
 import (
 	"context"
 	"fmt"
-	"github.com/goharbor/harbor/src/lib/errors"
-	"github.com/goharbor/harbor/src/lib/log"
 	"time"
 
+	"github.com/goharbor/harbor/src/lib/errors"
+	"github.com/goharbor/harbor/src/lib/log"
+
+	beego_orm "github.com/astaxie/beego/orm"
 	"github.com/docker/distribution/manifest/schema2"
 	"github.com/goharbor/harbor/src/lib/orm"
 	"github.com/goharbor/harbor/src/lib/q"
@@ -182,13 +184,21 @@ func (d *dao) UpdateBlobStatus(ctx context.Context, blob *models.Blob) (int64, e
 
 	var sql string
 	if blob.Status == models.StatusNone {
-		sql = `UPDATE blob SET version = version + 1, update_time = ?, status = ? where id = ? AND version >= ? AND status IN (%s) RETURNING version as new_version`
+		sql = `UPDATE %s SET version = version + 1, update_time = ?, status = ? where id = ? AND version >= ? AND status IN (%s) RETURNING version as new_version`
 	} else {
-		sql = `UPDATE blob SET version = version + 1, update_time = ?, status = ? where id = ? AND version = ? AND status IN (%s) RETURNING version as new_version`
+		sql = `UPDATE %s SET version = version + 1, update_time = ?, status = ? where id = ? AND version = ? AND status IN (%s) RETURNING version as new_version`
+	}
+
+	var tableName string
+	switch o.Driver().Type() {
+	case beego_orm.DRMySQL:
+		tableName = "`blob`"
+	default:
+		tableName = "blob"
 	}
 
 	var newVersion int64
-	params := []interface{}{time.Now(), blob.Status, blob.ID, blob.Version}
+	params := []interface{}{tableName, time.Now(), blob.Status, blob.ID, blob.Version}
 	stats := models.StatusMap[blob.Status]
 	for _, stat := range stats {
 		params = append(params, stat)
