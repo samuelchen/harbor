@@ -182,28 +182,14 @@ func (d *dao) UpdateBlobStatus(ctx context.Context, blob *models.Blob) (int64, e
 		return -1, err
 	}
 
-	var sql string
+	qs := o.QueryTable(blob)
+	qs = qs.Filter("id__exact", blob.ID).Filter("status__in", models.StatusMap[blob.Status])
 	if blob.Status == models.StatusNone {
-		sql = `UPDATE %s SET version = version + 1, update_time = ?, status = ? where id = ? AND version >= ? AND status IN (%s) RETURNING version as new_version`
+		qs = qs.Filter("version__gte", blob.Version)
 	} else {
-		sql = `UPDATE %s SET version = version + 1, update_time = ?, status = ? where id = ? AND version = ? AND status IN (%s) RETURNING version as new_version`
+		qs = qs.Filter("version__exact", blob.Version)
 	}
-
-	var tableName string
-	switch o.Driver().Type() {
-	case beego_orm.DRMySQL:
-		tableName = "`blob`"
-	default:
-		tableName = "blob"
-	}
-
-	var newVersion int64
-	params := []interface{}{tableName, time.Now(), blob.Status, blob.ID, blob.Version}
-	stats := models.StatusMap[blob.Status]
-	for _, stat := range stats {
-		params = append(params, stat)
-	}
-	if err := o.Raw(fmt.Sprintf(sql, orm.ParamPlaceholderForIn(len(models.StatusMap[blob.Status]))), params...).QueryRow(&newVersion); err != nil {
+	if _, err = qs.Update(beego_orm.Params{"version": beego_orm.ColValue(beego_orm.ColAdd, 1), "update_time": time.Now(), "status": blob.Status}); err != nil {
 		if e := orm.AsNotFoundError(err, "no blob is updated"); e != nil {
 			log.Warningf("no blob is updated according to query condition, id: %d, status_in, %v, err: %v", blob.ID, models.StatusMap[blob.Status], e)
 			return 0, nil
@@ -211,8 +197,46 @@ func (d *dao) UpdateBlobStatus(ctx context.Context, blob *models.Blob) (int64, e
 		return -1, err
 	}
 
-	blob.Version = newVersion
+	blobNew := models.Blob{}
+	qs = o.QueryTable(blob)
+	if err = qs.Filter("id__exact", blob.ID).One(&blobNew); err == nil {
+		return -1, err
+	}
+
+	blob.Version = blobNew.Version
 	return 1, nil
+
+	// var sql string
+	// if blob.Status == models.StatusNone {
+	// 	sql = `UPDATE %s SET version = version + 1, update_time = ?, status = ? where id = ? AND version >= ? AND status IN (%s) RETURNING version as new_version`
+	// } else {
+	// 	sql = `UPDATE %s SET version = version + 1, update_time = ?, status = ? where id = ? AND version = ? AND status IN (%s) RETURNING version as new_version`
+	// }
+
+	// var tableName string
+	// switch o.Driver().Type() {
+	// case beego_orm.DRMySQL:
+	// 	tableName = "`blob`"
+	// default:
+	// 	tableName = "blob"
+	// }
+
+	// var newVersion int64
+	// params := []interface{}{time.Now(), blob.Status, blob.ID, blob.Version}
+	// stats := models.StatusMap[blob.Status]
+	// for _, stat := range stats {
+	// 	params = append(params, stat)
+	// }
+	// if err := o.Raw(fmt.Sprintf(sql, tableName, orm.ParamPlaceholderForIn(len(models.StatusMap[blob.Status]))), params...).QueryRow(&newVersion); err != nil {
+	// 	if e := orm.AsNotFoundError(err, "no blob is updated"); e != nil {
+	// 		log.Warningf("no blob is updated according to query condition, id: %d, status_in, %v, err: %v", blob.ID, models.StatusMap[blob.Status], e)
+	// 		return 0, nil
+	// 	}
+	// 	return -1, err
+	// }
+
+	// blob.Version = newVersion
+	// return 1, nil
 }
 
 // UpdateBlob cannot handle the status change and version increase, for handling blob status change, please call
@@ -283,8 +307,16 @@ func (d *dao) SumBlobsSizeByProject(ctx context.Context, projectID int64, exclud
 		return 0, err
 	}
 
+	var tableName string
+	switch o.Driver().Type() {
+	case beego_orm.DRMySQL:
+		tableName = "`blob`"
+	default:
+		tableName = "blob"
+	}
+
 	params := []interface{}{projectID}
-	sql := `SELECT SUM(size) FROM blob JOIN project_blob ON blob.id = project_blob.blob_id AND project_id = ?`
+	sql := fmt.Sprintf(`SELECT SUM(size) FROM %s JOIN project_blob ON %s.id = project_blob.blob_id AND project_id = ?`, tableName, tableName)
 	if excludeForeignLayer {
 		foreignLayerTypes := []interface{}{
 			schema2.MediaTypeForeignLayer,
@@ -324,7 +356,15 @@ func (d *dao) ExistProjectBlob(ctx context.Context, projectID int64, blobDigest 
 		return false, err
 	}
 
-	sql := `SELECT COUNT(*) FROM project_blob JOIN blob ON project_blob.blob_id = blob.id AND project_id = ? AND digest = ?`
+	var tableName string
+	switch o.Driver().Type() {
+	case beego_orm.DRMySQL:
+		tableName = "`blob`"
+	default:
+		tableName = "blob"
+	}
+
+	sql := fmt.Sprintf(`SELECT COUNT(*) FROM project_blob JOIN %s ON project_blob.blob_id = %s.id AND project_id = ? AND digest = ?`, tableName, tableName)
 
 	var count int64
 	if err := o.Raw(sql, projectID, blobDigest).QueryRow(&count); err != nil {
@@ -376,7 +416,15 @@ func (d *dao) GetBlobsNotRefedByProjectBlob(ctx context.Context, timeWindowHours
 		return noneRefed, err
 	}
 
-	sql := fmt.Sprintf(`SELECT b.id, b.digest, b.content_type, b.status, b.version, b.size FROM blob AS b LEFT JOIN project_blob pb ON b.id = pb.blob_id WHERE pb.id IS NULL AND b.update_time <= now() - interval '%d hours';`, timeWindowHours)
+	var tableName string
+	switch ormer.Driver().Type() {
+	case beego_orm.DRMySQL:
+		tableName = "`blob`"
+	default:
+		tableName = "blob"
+	}
+
+	sql := fmt.Sprintf(`SELECT b.id, b.digest, b.content_type, b.status, b.version, b.size FROM %s AS b LEFT JOIN project_blob pb ON b.id = pb.blob_id WHERE pb.id IS NULL AND b.update_time <= now() - interval '%d hours';`, tableName, timeWindowHours)
 	_, err = ormer.Raw(sql).QueryRows(&noneRefed)
 	if err != nil {
 		return noneRefed, err
