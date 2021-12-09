@@ -160,7 +160,7 @@ func (t *taskDAO) UpdateStatus(ctx context.Context, id int64, status string, sta
 	// which means the operation isn't atomic, this will cause issues when running in concurrency
 	sql = `update task set status = ?, status_code = ?, status_revision = ?, update_time = ?, end_time = ? 
 		where id = ? and (status_revision = ? and status_code < ? or status_revision < ?) `
-	_, err = ormer.Raw(sql, status, statusCode, statusRevision, now, endTime,
+	_, err = ormer.Raw(sql, status, statusCode, statusRevision, now, func() interface{} { if jobStatus.Final() { return endTime } else { return nil }}(),
 		id, statusRevision, statusCode, statusRevision).Exec()
 	return err
 }
