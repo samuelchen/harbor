@@ -30,7 +30,7 @@ import (
 	_ "github.com/lib/pq"                                      // register pgsql driver
 )
 
-const defaultMigrationPath = "migrations/postgresql/"
+const defaultPostgresMigrationPath = "migrations/postgresql/"
 
 type pgsql struct {
 	host         string
@@ -148,7 +148,7 @@ func NewPostGreSQLMigrator(database *models.PostGreSQL) (*migrate.Migrate, error
 	// For UT
 	path := os.Getenv("POSTGRES_MIGRATION_SCRIPTS_PATH")
 	if len(path) == 0 {
-		path = defaultMigrationPath
+		path = defaultPostgresMigrationPath
 	}
 	srcURL := fmt.Sprintf("file://%s", path)
 	m, err := migrate.New(srcURL, dbURL.String())

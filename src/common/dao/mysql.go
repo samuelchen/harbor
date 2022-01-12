@@ -22,13 +22,15 @@ import (
 	"time"
 
 	"github.com/astaxie/beego/orm"
-	"github.com/goharbor/harbor/src/lib/log"
 	_ "github.com/go-sql-driver/mysql" // register mysql driver
 	"github.com/goharbor/harbor/src/common/models"
 	"github.com/goharbor/harbor/src/common/utils"
+	"github.com/goharbor/harbor/src/lib/log"
 	migrate "github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/mysql" // import mysql driver for migrator
 )
+
+const defaultMysqlMigrationPath = "migrations/mysql/"
 
 type mysql struct {
 	host     string
@@ -136,7 +138,7 @@ func NewMySQLMigrator(database *models.MySQL) (*migrate.Migrate, error) {
 	// For UT
 	path := os.Getenv("MYSQL_MIGRATION_SCRIPTS_PATH")
 	if len(path) == 0 {
-		path = defaultMigrationPath
+		path = defaultMysqlMigrationPath
 	}
 	srcURL := fmt.Sprintf("file://%s", path)
 
