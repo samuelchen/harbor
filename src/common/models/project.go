@@ -177,7 +177,7 @@ func (p *Project) FilterByMember(ctx context.Context, qs orm.QuerySeter, key str
 		subQuery = fmt.Sprintf(tpl, subQuery, strings.TrimSpace(strings.Join(elems, ", ")))
 	}
 
-	return qs.FilterRaw("project_id", fmt.Sprintf("IN (%s)", subQuery))
+	return qs.FilterRaw("project_id", fmt.Sprintf("IN (SELECT project_id from (%s) as project_ids)", subQuery))
 }
 
 func isTrue(i interface{}) bool {
