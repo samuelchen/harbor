@@ -47,6 +47,9 @@ func main() {
 			Username: viper.GetString("database.username"),
 			Password: viper.GetString("database.password"),
 			Database: viper.GetString("database.dbname"),
+			SSLMode:      viper.GetString("database.sslmode"),
+			MaxIdleConns: viper.GetInt("database.max_idle_conns"),
+			MaxOpenConns: viper.GetInt("database.max_open_conns"),
 		}
 	}
 	if err := dao.InitDatabase(dbCfg); err != nil {

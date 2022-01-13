@@ -23,11 +23,12 @@ var defaultAttrs = map[string]string{
 	"POSTGRESQL_DATABASE": "registry",
 	"POSTGRESQL_SSLMODE":  "disable",
 
-	"MYSQL_HOST": "localhost",
-	"MYSQL_PORT": "3306",
+	"MYSQL_HOST":     "localhost",
+	"MYSQL_PORT":     "3306",
 	"MYSQL_USERNAME": "root",
 	"MYSQL_PASSWORD": "password",
 	"MYSQL_DATABASE": "registry",
+	"MYSQL_SSLMODE":  "disable",
 }
 
 func main() {
@@ -46,11 +47,14 @@ func main() {
 			MaxOpenConns: 5,
 		},
 		MySQL: &models.MySQL{
-			Host:     getAttr("MYSQL_HOST"),
-			Port:     mysql_port,
-			Username: getAttr("MYSQL_USERNAME"),
-			Password: getAttr("MYSQL_PASSWORD"),
-			Database: getAttr("MYSQL_DATABASE"),
+			Host:         getAttr("MYSQL_HOST"),
+			Port:         mysql_port,
+			Username:     getAttr("MYSQL_USERNAME"),
+			Password:     getAttr("MYSQL_PASSWORD"),
+			Database:     getAttr("MYSQL_DATABASE"),
+			SSLMode:      getAttr("POSTGRESQL_SSLMODE"),
+			MaxIdleConns: 5,
+			MaxOpenConns: 5,
 		},
 	}
 
@@ -60,8 +64,8 @@ func main() {
 		log.Infof("DB info: postgres://%s@%s:%d/%s?sslmode=%s", db.PostGreSQL.Username, db.PostGreSQL.Host,
 			db.PostGreSQL.Port, db.PostGreSQL.Database, db.PostGreSQL.SSLMode)
 	case common.DatabaseType_MySQL:
-		log.Infof("DB info: mysql://%s@%s:%d/%s", db.MySQL.Username, db.MySQL.Host,
-			db.MySQL.Port, db.MySQL.Database)
+		log.Infof("DB info: mysql://%s@%s:%d/%s?sslmode=%s", db.MySQL.Username, db.MySQL.Host,
+			db.MySQL.Port, db.MySQL.Database, db.PostGreSQL.SSLMode)
 	default:
 		log.Fatalf("DB info: unknown type - %s", db.Type)
 	}

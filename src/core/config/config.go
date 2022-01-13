@@ -293,6 +293,9 @@ func Database() (*models.Database, error) {
 		Username:     cfgMgr.Get(common.MySQLUsername).GetString(),
 		Password:     cfgMgr.Get(common.MySQLPassword).GetString(),
 		Database:     cfgMgr.Get(common.MySQLDatabase).GetString(),
+		SSLMode:      cfgMgr.Get(common.MySQLSSLMode).GetString(),
+		MaxIdleConns: cfgMgr.Get(common.MySQLMaxIdleConns).GetInt(),
+		MaxOpenConns: cfgMgr.Get(common.MySQLMaxOpenConns).GetInt(),
 	}
 	database.MySQL = mysql
 	return database, nil

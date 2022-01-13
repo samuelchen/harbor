@@ -33,21 +33,27 @@ import (
 const defaultMysqlMigrationPath = "migrations/mysql/"
 
 type mysql struct {
-	host     string
-	port     string
-	usr      string
-	pwd      string
-	database string
+	host         string
+	port         string
+	usr          string
+	pwd          string
+	database     string
+	sslmode      string
+	maxIdleConns int
+	maxOpenConns int
 }
 
 // NewMySQL returns an instance of mysql
-func NewMySQL(host, port, usr, pwd, database string) Database {
+func NewMySQL(host, port, usr, pwd, database string, sslmode string, maxIdleConns int, maxOpenConns int) Database {
 	return &mysql{
-		host:     host,
-		port:     port,
-		usr:      usr,
-		pwd:      pwd,
-		database: database,
+		host:         host,
+		port:         port,
+		usr:          usr,
+		pwd:          pwd,
+		database:     database,
+		sslmode:      sslmode,
+		maxIdleConns: maxIdleConns,
+		maxOpenConns: maxOpenConns,
 	}
 }
 
@@ -66,9 +72,9 @@ func (m *mysql) Register(alias ...string) error {
 	if len(alias) != 0 {
 		an = alias[0]
 	}
-	conn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", m.usr,
-		m.pwd, m.host, m.port, m.database)
-	if err := orm.RegisterDataBase(an, "mysql", conn); err != nil {
+	conn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?sslmode=%s", m.usr,
+		m.pwd, m.host, m.port, m.database, m.sslmode)
+	if err := orm.RegisterDataBase(an, "mysql", conn, m.maxIdleConns, m.maxOpenConns); err != nil {
 		return err
 	}
 	db, _ := orm.GetDB(an)

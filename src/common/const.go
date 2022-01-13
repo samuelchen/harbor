@@ -61,6 +61,9 @@ const (
 	MySQLUsername           = "mysql_username"
 	MySQLPassword           = "mysql_password"
 	MySQLDatabase           = "mysql_database"
+	MySQLSSLMode            = "mysql_sslmode"
+	MySQLMaxIdleConns       = "mysql_max_idle_conns"
+	MySQLMaxOpenConns       = "mysql_max_open_conns"
 
 	ExtEndpoint                      = "ext_endpoint"
 	AUTHMode                         = "auth_mode"

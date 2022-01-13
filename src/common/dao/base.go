@@ -93,6 +93,9 @@ func getDatabase(database *models.Database) (db Database, err error) {
 			database.MySQL.Username,
 			database.MySQL.Password,
 			database.MySQL.Database,
+			database.MySQL.SSLMode,
+			database.MySQL.MaxIdleConns,
+			database.MySQL.MaxOpenConns,
 		)
 	default:
 		err = fmt.Errorf("invalid database: %s", database.Type)
