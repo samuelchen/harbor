@@ -72,7 +72,8 @@ func (m *mysql) Register(alias ...string) error {
 	if len(alias) != 0 {
 		an = alias[0]
 	}
-	conn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?sslmode=%s", m.usr,
+	// sslmode: true, false, skip-verify, preferred, <name>
+	conn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&tls=%s", m.usr,
 		m.pwd, m.host, m.port, m.database, m.sslmode)
 	if err := orm.RegisterDataBase(an, "mysql", conn, m.maxIdleConns, m.maxOpenConns); err != nil {
 		return err
@@ -127,8 +128,8 @@ func (p *mysql) UpgradeSchema() error {
 
 // String returns the details of database
 func (m *mysql) String() string {
-	return fmt.Sprintf("type-%s host-%s port-%s user-%s database-%s",
-		m.Name(), m.host, m.port, m.usr, m.database)
+	return fmt.Sprintf("type-%s host-%s port-%s user-%s database-%s tls-%s",
+		m.Name(), m.host, m.port, m.usr, m.database, m.sslmode)
 }
 
 // NewMigrator creates a migrator base on the information
@@ -138,7 +139,7 @@ func NewMySQLMigrator(database *models.MySQL) (*migrate.Migrate, error) {
 		User:     url.UserPassword(database.Username, database.Password),
 		Host:     fmt.Sprintf("tcp(%s:%d)", database.Host, database.Port),
 		Path:     database.Database,
-		RawQuery: "charset=utf8mb4&parseTime=True",
+		RawQuery: fmt.Sprintf("charset=utf8mb4&parseTime=True&tls=%s", database.SSLMode),
 	}
 
 	// For UT

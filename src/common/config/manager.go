@@ -233,9 +233,9 @@ func (c *CfgManager) GetDatabaseCfg() *models.Database {
 			Username:     c.Get(common.MySQLUsername).GetString(),
 			Password:     c.Get(common.MySQLPassword).GetString(),
 			Database:     c.Get(common.MySQLDatabase).GetString(),
-			SSLMode:      c.Get(common.PostGreSQLSSLMode).GetString(),
-			MaxIdleConns: c.Get(common.PostGreSQLMaxIdleConns).GetInt(),
-			MaxOpenConns: c.Get(common.PostGreSQLMaxOpenConns).GetInt(),
+			SSLMode:      c.Get(common.MySQLSSLMode).GetString(),
+			MaxIdleConns: c.Get(common.MySQLMaxIdleConns).GetInt(),
+			MaxOpenConns: c.Get(common.MySQLMaxOpenConns).GetInt(),
 		},
 	}
 }

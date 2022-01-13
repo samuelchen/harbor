@@ -42,11 +42,11 @@ func main() {
 		}
 	case common.DatabaseType_MySQL:
 		dbCfg.MySQL = &models.MySQL{
-			Host:     viper.GetString("database.host"),
-			Port:     viper.GetInt("database.port"),
-			Username: viper.GetString("database.username"),
-			Password: viper.GetString("database.password"),
-			Database: viper.GetString("database.dbname"),
+			Host:         viper.GetString("database.host"),
+			Port:         viper.GetInt("database.port"),
+			Username:     viper.GetString("database.username"),
+			Password:     viper.GetString("database.password"),
+			Database:     viper.GetString("database.dbname"),
 			SSLMode:      viper.GetString("database.sslmode"),
 			MaxIdleConns: viper.GetInt("database.max_idle_conns"),
 			MaxOpenConns: viper.GetInt("database.max_open_conns"),

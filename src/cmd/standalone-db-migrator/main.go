@@ -28,7 +28,7 @@ var defaultAttrs = map[string]string{
 	"MYSQL_USERNAME": "root",
 	"MYSQL_PASSWORD": "password",
 	"MYSQL_DATABASE": "registry",
-	"MYSQL_SSLMODE":  "disable",
+	"MYSQL_SSLMODE":  "false",
 }
 
 func main() {
@@ -64,7 +64,7 @@ func main() {
 		log.Infof("DB info: postgres://%s@%s:%d/%s?sslmode=%s", db.PostGreSQL.Username, db.PostGreSQL.Host,
 			db.PostGreSQL.Port, db.PostGreSQL.Database, db.PostGreSQL.SSLMode)
 	case common.DatabaseType_MySQL:
-		log.Infof("DB info: mysql://%s@%s:%d/%s?sslmode=%s", db.MySQL.Username, db.MySQL.Host,
+		log.Infof("DB info: mysql://%s@%s:%d/%s?charset=utf8mb4&tls=%s", db.MySQL.Username, db.MySQL.Host,
 			db.MySQL.Port, db.MySQL.Database, db.PostGreSQL.SSLMode)
 	default:
 		log.Fatalf("DB info: unknown type - %s", db.Type)
