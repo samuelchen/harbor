@@ -39,14 +39,19 @@ func AddUserGroup(userGroup models.UserGroup) (int, error) {
 		return 0, ErrGroupNameDup
 	}
 	o := dao.GetOrmer()
-	sql := "insert into user_group (group_name, group_type, ldap_group_dn, creation_time, update_time) values (?, ?, ?, ?, ?) RETURNING id"
+	sql := "insert into user_group (group_name, group_type, ldap_group_dn, creation_time, update_time) values (?, ?, ?, ?, ?)"
 	var id int
 	now := time.Now()
 
-	err = o.Raw(sql, userGroup.GroupName, userGroup.GroupType, utils.TrimLower(userGroup.LdapGroupDN), now, now).QueryRow(&id)
+	result, err := o.Raw(sql, userGroup.GroupName, userGroup.GroupType, utils.TrimLower(userGroup.LdapGroupDN), now, now).Exec()
 	if err != nil {
 		return 0, err
 	}
+	tmp, err := result.LastInsertId();
+	if err != nil {
+		return 0, err
+	}
+	id = int(tmp)
 
 	return id, nil
 }

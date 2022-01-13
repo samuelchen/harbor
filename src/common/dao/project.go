@@ -27,12 +27,16 @@ import (
 func AddProject(project models.Project) (int64, error) {
 	o := GetOrmer()
 
-	sql := "insert into project (owner_id, name, registry_id, creation_time, update_time, deleted) values (?, ?, ?, ?, ?, ?) RETURNING project_id"
+	sql := "insert into project (owner_id, name, registry_id, creation_time, update_time, deleted) values (?, ?, ?, ?, ?, ?)"
 	var projectID int64
 	now := time.Now()
 
-	err := o.Raw(sql, project.OwnerID, project.Name, project.RegistryID, now, now, project.Deleted).QueryRow(&projectID)
+	result, err := o.Raw(sql, project.OwnerID, project.Name, project.RegistryID, now, now, project.Deleted).Exec()
 	if err != nil {
+		return 0, err
+	}
+
+	if projectID, err = result.LastInsertId(); err != nil {
 		return 0, err
 	}
 
@@ -66,11 +70,17 @@ func addProjectMember(member models.Member) (int, error) {
 	}
 
 	var pmID int
-	sql := "insert into project_member (project_id, entity_id , role, entity_type) values (?, ?, ?, ?) RETURNING id"
-	err := o.Raw(sql, member.ProjectID, member.EntityID, member.Role, member.EntityType).QueryRow(&pmID)
+	sql := "insert into project_member (project_id, entity_id , role, entity_type) values (?, ?, ?, ?)"
+	result, err := o.Raw(sql, member.ProjectID, member.EntityID, member.Role, member.EntityType).Exec()
 	if err != nil {
 		return 0, err
 	}
+	tmp, err := result.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	pmID = int(tmp)
+
 	return pmID, err
 }
 
