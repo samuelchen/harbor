@@ -1,6 +1,8 @@
 package dao
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/astaxie/beego/orm"
@@ -31,6 +33,7 @@ type immutableRuleDao struct{}
 func (i *immutableRuleDao) CreateImmutableRule(ir *model.ImmutableRule) (int64, error) {
 	ir.Disabled = false
 	o := dao.GetOrmer()
+	ir.TagFilterHash = getMD5(ir.TagFilter)
 	id, err := o.Insert(ir)
 	if err != nil {
 		if dao.IsDupRecErr(err) {
@@ -45,6 +48,7 @@ func (i *immutableRuleDao) CreateImmutableRule(ir *model.ImmutableRule) (int64, 
 func (i *immutableRuleDao) UpdateImmutableRule(projectID int64, ir *model.ImmutableRule) (int64, error) {
 	ir.ProjectID = projectID
 	o := dao.GetOrmer()
+	ir.TagFilterHash = getMD5(ir.TagFilter)
 	id, err := o.Update(ir, "TagFilter")
 	if err != nil {
 		if errors.Is(err, orm.ErrNoRows) {
@@ -113,4 +117,11 @@ func (i *immutableRuleDao) DeleteImmutableRule(id int64) (int64, error) {
 	o := dao.GetOrmer()
 	ir := &model.ImmutableRule{ID: id}
 	return o.Delete(ir)
+}
+
+func getMD5(content string) string {
+	_md5 := md5.New()
+	_md5.Write([]byte(content))
+	hashStr := hex.EncodeToString(_md5.Sum(nil))
+	return hashStr
 }

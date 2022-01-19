@@ -13,6 +13,7 @@ type ImmutableRule struct {
 	ID        int64  `orm:"pk;auto;column(id)" json:"id,omitempty"`
 	ProjectID int64  `orm:"column(project_id)" json:"project_id,omitempty"`
 	TagFilter string `orm:"column(tag_filter)" json:"tag_filter,omitempty"`
+	TagFilterHash string `orm:"column(tag_filter_hash)" json:"tag_filter_hash,omitempty"`
 	Disabled  bool   `orm:"column(disabled)" json:"disabled,omitempty"`
 }
 

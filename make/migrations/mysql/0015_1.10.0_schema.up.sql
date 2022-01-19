@@ -43,7 +43,7 @@ CREATE TABLE immutable_tag_rule
   id SERIAL PRIMARY KEY NOT NULL,
   project_id int NOT NULL,
   tag_filter text,
-  tag_filter_hash int,
+  tag_filter_hash varchar(32),
   disabled BOOLEAN NOT NULL DEFAULT FALSE,
   creation_time timestamp default CURRENT_TIMESTAMP,
   UNIQUE(project_id, tag_filter_hash)
