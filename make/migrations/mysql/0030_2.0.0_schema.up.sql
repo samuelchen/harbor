@@ -229,26 +229,27 @@ ALTER TABLE replication_task MODIFY COLUMN dst_resource varchar(512);
 UPDATE quota SET hard =  json_remove(hard, '$.count');
 UPDATE quota_usage SET used =  json_remove(used, '$.count');
 
+-- cw: remove due to no privilege to create function
 -- cw: add split_part func for mysql
-CREATE FUNCTION `split_part`(
-	str VARCHAR(255) ,
-	delim VARCHAR(12) ,
-	pos INT
-) RETURNS VARCHAR(255) CHARSET utf8 RETURN REPLACE(
-	SUBSTRING(
-		SUBSTRING_INDEX(str , delim , pos) ,
-		CHAR_LENGTH(
-			SUBSTRING_INDEX(str , delim , pos - 1)
-		) + 1
-	) ,
-	delim ,
-	''
-);
+-- CREATE FUNCTION `split_part`(
+-- 	str VARCHAR(255) ,
+-- 	delim VARCHAR(12) ,
+-- 	pos INT
+-- ) RETURNS VARCHAR(255) CHARSET utf8 RETURN REPLACE(
+-- 	SUBSTRING(
+-- 		SUBSTRING_INDEX(str , delim , pos) ,
+-- 		CHAR_LENGTH(
+-- 			SUBSTRING_INDEX(str , delim , pos - 1)
+-- 		) + 1
+-- 	) ,
+-- 	delim ,
+-- 	''
+-- );
 
 
 /* make Clair and Trivy as reserved name for scanners in-tree */
 UPDATE scanner_registration SET name = concat_ws('-', name, uuid) WHERE name IN ('Clair', 'Trivy') AND immutable = FALSE;
-UPDATE scanner_registration SET name = split_part(name, '-', 1) WHERE immutable = TRUE;
+-- UPDATE scanner_registration SET name = split_part(name, '-', 1) WHERE immutable = TRUE;
 
 /*update event types in table 'notification_policy'*/
 UPDATE notification_policy SET event_types = '["DOWNLOAD_CHART","DELETE_CHART","UPLOAD_CHART","DELETE_ARTIFACT","PULL_ARTIFACT","PUSH_ARTIFACT","SCANNING_FAILED","SCANNING_COMPLETED"]';
